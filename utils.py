@@ -65,12 +65,14 @@ class Preprocess():
     def __init__(self, df: pd.DataFrame, 
                        data_dir: string, 
                        image_embeddings: bool = True,
+                       image_embeddings_size: int = 512,
                        vision_model: tf.keras.applications = VGG19(weights="imagenet", include_top=False, pooling="avg")) -> None:
         self.df = df
         self.data_dir = data_dir
         self.data = {"image": [], "filepath": [], "text": [], "label": []}
 
         self.image_embeddings = image_embeddings
+        self.image_embeddings_size = image_embeddings_size
         self.vision_model = vision_model
 
     def preprocess(self):
@@ -82,7 +84,7 @@ class Preprocess():
                 images.append(self.vision_model.predict(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))[0])
                 texts.append(self.preprocess_text(text))
             images = np.concatenate(images)
-            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], 512), tf.float32)
+            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.image_embeddings_size), tf.float32)
         else:
             for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
                 images.append(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))
