@@ -71,11 +71,11 @@ class Preprocess():
         self.data_dir = data_dir
         self.data = {"image": [], "filepath": [], "text": [], "label": []}
 
+        self.vision_model = vision_model
         self.image_embeddings = image_embeddings
         self.image_embeddings_size = image_embeddings_size
-        self.vision_model = vision_model
 
-    def preprocess(self):
+    def preprocess(self) -> None:
 
         images = []
         texts = []
@@ -95,15 +95,17 @@ class Preprocess():
         self.data["filepath"] = self.df.img.values
         self.data["label"] = self.df.label.values
 
-    def preprocess_image(self, filepath: string) -> tf.Tensor:
+    @staticmethod
+    def preprocess_image(filepath: string) -> tf.Tensor:
 
         image = tf.io.read_file(filename=filepath)
         image = tf.image.decode_jpeg(image, channels=3)
         image = tf.image.resize(image, [224,224], method='nearest')
 
         return image
-
-    def preprocess_text(self, text: string, remove_emojis=True, remove_numbers=True, remove_punc=True, remove_url=True, remove_spaces=True) -> string:
+    
+    @staticmethod
+    def preprocess_text(text: string, remove_emojis=True, remove_numbers=True, remove_punc=True, remove_url=True, remove_spaces=True) -> string:
             """Clean the text
             
             Arguments:
