@@ -62,20 +62,33 @@ class Metrics():
 
 
 class Preprocess():
-    def __init__(self, df: pd.DataFrame, data_dir: string) -> None:
+    def __init__(self, df: pd.DataFrame, 
+                       data_dir: string, 
+                       image_embeddings: bool = True,
+                       vision_model: tf.keras.applications = VGG19(weights="imagenet", include_top=False, pooling="avg")) -> None:
         self.df = df
         self.data_dir = data_dir
         self.data = {"image": [], "filepath": [], "text": [], "label": []}
-        self.vgg = VGG19(weights='imagenet', include_top=False, pooling='avg')
+
+        self.image_embeddings = image_embeddings
+        self.vision_model = vision_model
 
     def preprocess(self):
+
         images = []
         texts = []
-        for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
-            images.append(self.vgg.predict(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))[0])
-            texts.append(self.preprocess_text(text))
-        images = np.concatenate(images)
-        self.data["image"] = tf.cast(images.reshape(self.df.shape[0], 512), tf.float32)
+        if self.image_embeddings:
+            for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
+                images.append(self.vision_model.predict(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))[0])
+                texts.append(self.preprocess_text(text))
+            images = np.concatenate(images)
+            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], 512), tf.float32)
+        else:
+            for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
+                images.append(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))
+                texts.append(self.preprocess_text(text))
+            images = np.concatenate(images)
+            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], 224, 224, 3), tf.float32)
         self.data["texts"] = np.array(texts)
         self.data["filepath"] = self.df.img.values
         self.data["label"] = self.df.label.values
@@ -125,4 +138,3 @@ class Preprocess():
                 if remove_emojis:
                     text = ''.join(c for c in text if c not in emoji.UNICODE_EMOJI)
                 return text
-
