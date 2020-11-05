@@ -1,11 +1,11 @@
 import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
-from tf.keras.models import Model
-from tf.keras.optimizers import Adam
-from tf.keras.applications import VGG19
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.applications import VGG19
 from transformers import AutoTokenizer, TFAutoModel
-from tf.keras.layers import Dense, Concatenate, Input, Dropout, Flatten
+from tensorflow.keras.layers import Dense, Concatenate, Input, Dropout, Flatten
 
 from typing import Tuple
 
@@ -37,7 +37,7 @@ class VisionBertModel(tf.keras.Model):
         self.img_dense2 = Dense(256, activation='relu')
         self.img_dense3 = Dense(512, activation='relu')
 
-    def call(self, inputs: list):
+    def call(self, inputs: list) -> tf.keras.layers:
         text_inputs = inputs[:3]
         img_inputs = inputs[-1]
         _, text = self.text_model_layer(text_inputs)
@@ -76,13 +76,13 @@ class VisionBertClassifier:
         token_type_id = []
         attention_mask = []
         for text in tqdm(texts):
-            dictIn = self.tokenizer.encode_plus(text, max_length=self.seq_len, pad_to_max_length=True)
+            dictIn = self.tokenizer.encode_plus(text, max_length=self.seq_len, pad_to_max_length=True, truncation=True)
             input_id.append(dictIn['input_ids'])
             token_type_id.append(dictIn['token_type_ids'])
             attention_mask.append(dictIn['attention_mask'])
         return np.array(input_id), np.array(token_type_id), np.array(attention_mask)
     
-    def build(self, vision_model):
+    def build(self, vision_model: tf.keras.applications):
         
         METRICS = ['accuracy', 
                    tf.keras.metrics.AUC(), 
@@ -98,14 +98,18 @@ class VisionBertClassifier:
 
     def train(self, data: dict, 
                     vision_model: tf.keras.applications,
-                    validation_split: float = 0.2):
+                    validation_split: float = 0.2) -> tf.keras.callbacks.History:
 
         model = self.build(vision_model)
         input_id, token_type_id, attention_mask = self.encode(data['texts'])
         image_data = data['image']
         labels = np.asarray(data['label']).astype('float32').reshape((-1,1))
+        callback = tf.keras.callbacks.EarlyStopping(monitor='val_auc', patience=5, mode='max', restore_best_weights=True)
         self.history = model.fit([input_id, token_type_id, attention_mask, image_data],
                                  labels,
                                  validation_split=validation_split,
                                  batch_size=32,
-                                 epochs=10)
+                                 callbacks = [callback],
+                                 epochs=100)
+
+        return self.history
