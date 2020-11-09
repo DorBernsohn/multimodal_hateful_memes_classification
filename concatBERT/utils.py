@@ -12,7 +12,11 @@ from tensorflow.keras.applications.vgg19 import preprocess_input
 
 
 def ZeroDivisionDecorator(func):
+    """property to avoid ZeroDivisionError
 
+    Args:
+        func (func): a function to wrap with the property
+    """
     def func_wrapper(*args, **kwargs):
 
         with suppress(ZeroDivisionError):
@@ -20,7 +24,8 @@ def ZeroDivisionDecorator(func):
     return func_wrapper
 
 class Metrics():
-    
+    """metrics calculation for recall, precision and f1 score
+    """    
     def __init__(self, y_true: np.array, y_pred: np.array) -> None:
         counts = Counter(zip(y_pred, y_true))
         self.tp = counts[1, 1]
@@ -62,6 +67,8 @@ class Metrics():
 
 
 class Preprocess():
+    """preprocess the inputs for concatBERT model
+    """    
     def __init__(self, df: pd.DataFrame, 
                        data_dir: string, 
                        image_embeddings: bool = True,
@@ -97,7 +104,14 @@ class Preprocess():
 
     @staticmethod
     def preprocess_image(filepath: string) -> tf.Tensor:
+        """perform decoding and resizing to an image
 
+        Args:
+            filepath (string): filepath of an image
+
+        Returns:
+            tf.Tensor: the image after decoding and resizing
+        """        
         image = tf.io.read_file(filename=filepath)
         image = tf.image.decode_jpeg(image, channels=3)
         image = tf.image.resize(image, [224,224], method='nearest')

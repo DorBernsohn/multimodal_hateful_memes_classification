@@ -10,7 +10,11 @@ from tensorflow.keras.layers import Dense, Concatenate, Input, Dropout, Flatten
 from typing import Tuple
 
 class VisionBertModel(tf.keras.Model):
+    """create a model that concat BERT embeddings and other vision model (VGG, ResNet..)
 
+    Args:
+        tf (tf.keras.Model): tf.keras.Model
+    """
     def __init__(self, seq_len: int = 100,
                        image_embeddings: bool = True,
                        text_model_name: str = 'bert-base-uncased',
@@ -21,7 +25,7 @@ class VisionBertModel(tf.keras.Model):
         self.text_model_layer.trainable = False
         self.image_embeddings = image_embeddings
 
-        self.vision_model = vision_model # VGG19(weights=image_weights_name, include_top=False)
+        self.vision_model = vision_model
         self.vision_model.trainable = False
 
         self.flatten = Flatten()
@@ -61,7 +65,8 @@ class VisionBertModel(tf.keras.Model):
         return self.global_dense3(concat)
 
 class VisionBertClassifier:
-
+    """build the model and run training
+    """
     def __init__(self, text_model_name: str = 'bert-base-uncased', 
                        seq_len: int = 100,
                        image_embeddings: bool = True) -> None:
