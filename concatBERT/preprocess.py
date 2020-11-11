@@ -13,7 +13,6 @@ class Preprocess():
     """    
     def __init__(self, df: pd.DataFrame, 
                        data_dir: string, 
-                       image_embeddings: bool = True,
                        image_embeddings_size: int = 512,
                        vision_model: tf.keras.applications = VGG19(weights="imagenet", include_top=False, pooling="avg")) -> None:
         self.df = df
@@ -21,25 +20,19 @@ class Preprocess():
         self.data = {"image": [], "filepath": [], "text": [], "label": []}
 
         self.vision_model = vision_model
-        self.image_embeddings = image_embeddings
+        self.vision_model.trainable = False
         self.image_embeddings_size = image_embeddings_size
 
     def preprocess(self) -> None:
 
         images = []
         texts = []
-        if self.image_embeddings:
-            for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
-                images.append(self.vision_model.predict(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))[0])
-                texts.append(self.preprocess_text(text))
-            images = np.concatenate(images)
-            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.image_embeddings_size), tf.float32)
-        else:
-            for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
-                images.append(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))
-                texts.append(self.preprocess_text(text))
-            images = np.concatenate(images)
-            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], 224, 224, 3), tf.float32)
+        for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
+            images.append(self.vision_model.predict(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))[0])
+            texts.append(self.preprocess_text(text))
+        images = np.concatenate(images)
+        self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.image_embeddings_size), tf.float32)
+
         self.data["texts"] = np.array(texts)
         self.data["filepath"] = self.df.img.values
         self.data["label"] = self.df.label.values

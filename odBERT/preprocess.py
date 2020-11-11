@@ -6,11 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 import tensorflow as tf
 import tensorflow_hub as hub
-from contextlib import suppress
-from collections import Counter
 from tensorflow.keras.applications import VGG19
 from tensorflow.keras.applications.vgg19 import preprocess_input
-
 
 class Preprocess():
     """preprocess the inputs for concatBERT model
