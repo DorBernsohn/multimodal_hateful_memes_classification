@@ -3,6 +3,7 @@ import emoji
 import string
 import numpy as np
 import pandas as pd
+from PIL import Image
 from tqdm import tqdm
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -14,6 +15,7 @@ class Preprocess():
     """    
     def __init__(self, df: pd.DataFrame, 
                        data_dir: string, 
+                       max_objects: int = 4,
                        image_embeddings: bool = True,
                        image_embeddings_size: int = 512,
                        vision_model: tf.keras.applications = VGG19(weights="imagenet", include_top=False, pooling="avg"),
@@ -26,23 +28,39 @@ class Preprocess():
         self.detector = detector
         self.image_embeddings = image_embeddings
         self.image_embeddings_size = image_embeddings_size
+        self.max_objects = max_objects
 
     def preprocess(self) -> None:
 
         images = []
         texts = []
-        if self.image_embeddings:
-            for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
-                images.append(self.vision_model.predict(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))[0])
-                texts.append(self.preprocess_text(text))
-            images = np.concatenate(images)
-            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.image_embeddings_size), tf.float32)
-        else:
-            for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
-                images.append(preprocess_input(np.expand_dims(self.preprocess_image(self.data_dir + file_path), axis=0)))
-                texts.append(self.preprocess_text(text))
-            images = np.concatenate(images)
-            self.data["image"] = tf.cast(images.reshape(self.df.shape[0], 224, 224, 3), tf.float32)
+        for i ,(file_path, text) in tqdm(enumerate(zip(self.df.img, self.df.text))):
+
+            img = self.preprocess_image(self.data_dir + file_path)
+            im_width, im_height = Image.fromarray(np.uint8(img)).convert("RGB").size
+
+            converted_img  = tf.image.convert_image_dtype(img, tf.float32)[tf.newaxis, ...]
+            converted_img = tf.image.resize(converted_img, [224,224], method='nearest')
+            result = self.detector(converted_img)
+            result = {key:value.numpy() for key,value in result.items()}
+
+
+            if len(result["detection_boxes"]) < self.max_objects: self.max_objects = len(result["detection_boxes"])
+            embedding_list = []
+            for i in range(self.max_objects):
+                ymin, xmin, ymax, xmax = tuple(result["detection_boxes"][i])
+                (xminn, xmaxx, yminn, ymaxx) = (xmin * im_width, xmax * im_width, ymin * im_height, ymax * im_height)
+
+                new_img = tf.image.crop_to_bounding_box(
+                            img, int(yminn), int(xminn), int(ymaxx - yminn), int(xmaxx - xminn))
+                embedding_list.append(self.vision_model.predict(preprocess_input(np.expand_dims(new_img, axis=0)))[0])
+                if len(embedding_list) < self.max_objects:
+                    embedding_list.append(np.array([0]*len(embedding_list)*512))
+            images.append(tf.cast(np.concatenate(embedding_list), tf.float32))
+            texts.append(self.preprocess_text(text))
+        images = np.concatenate(images)
+        self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.max_objects*self.image_embeddings_size), tf.float32)
+
         self.data["texts"] = np.array(texts)
         self.data["filepath"] = self.df.img.values
         self.data["label"] = self.df.label.values
@@ -59,7 +77,6 @@ class Preprocess():
         """        
         image = tf.io.read_file(filename=filepath)
         image = tf.image.decode_jpeg(image, channels=3)
-        image = tf.image.resize(image, [224,224], method='nearest')
 
         return image
     
