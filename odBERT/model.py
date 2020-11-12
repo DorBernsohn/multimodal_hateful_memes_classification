@@ -35,10 +35,11 @@ class VisionBertModel(tf.keras.Model):
         self.global_dense3 = Dense(1, activation='sigmoid')
         self.dense_text1 = Dense(768, activation='relu')
         self.dense_text2 = Dense(256, activation='relu')
-        self.img_dense1 = Dense(512*4, activation='relu')
-        self.img_dense2 = Dense(512*2, activation='relu')
-        self.img_dense3 = Dense(512, activation='relu')
-        self.img_dense4 = Dense(256, activation='relu')
+        self.img_dense1 = Dense(512*8, activation='relu')
+        self.img_dense2 = Dense(512*4, activation='relu')
+        self.img_dense3 = Dense(512*2, activation='relu')
+        self.img_dense4 = Dense(512, activation='relu')
+        self.img_dense5 = Dense(256, activation='relu')
 
     def call(self, inputs: list) -> tf.keras.layers:
         text_inputs = inputs[:3]
@@ -54,6 +55,7 @@ class VisionBertModel(tf.keras.Model):
         dense = self.img_dense2(dense)
         dense = self.img_dense3(dense)
         dense = self.img_dense4(dense)
+        dense = self.img_dense5(dense)
         img = self.dropout(dense)
 
         concat = self.concat([text, img])

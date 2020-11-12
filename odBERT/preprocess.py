@@ -53,13 +53,14 @@ class Preprocess():
 
                 new_img = tf.image.crop_to_bounding_box(
                             img, int(yminn), int(xminn), int(ymaxx - yminn), int(xmaxx - xminn))
+                new_img = tf.image.resize(new_img, [224,224], method='nearest')
                 embedding_list.append(self.vision_model.predict(preprocess_input(np.expand_dims(new_img, axis=0)))[0])
                 if len(embedding_list) < self.max_objects:
-                    embedding_list.append(np.array([0]*len(embedding_list)*512))
+                    embedding_list.append(np.array([0]*(self.max_objects - len(embedding_list))*512))
             images.append(tf.cast(np.concatenate(embedding_list), tf.float32))
             texts.append(self.preprocess_text(text))
         images = np.concatenate(images)
-        self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.max_objects*self.image_embeddings_size), tf.float32)
+        self.data["image"] = tf.cast(images.reshape(self.df.shape[0], self.max_objects*self.image_embeddings_size*2), tf.float32)
 
         self.data["texts"] = np.array(texts)
         self.data["filepath"] = self.df.img.values
