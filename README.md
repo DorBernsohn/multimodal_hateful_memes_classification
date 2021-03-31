@@ -8,7 +8,7 @@ multimodal deep learning model to detect hateful memes
 
 Requirements:
 
-- emoji -qq
-- torch==1.4.0. -qq (in colab)
-- tensorflow==2.2 -qq
-- transformers==3.5.0 -qq
+- emoji
+- torch==1.4.0. (in colab)
+- tensorflow==2.2
+- transformers==3.5.0
