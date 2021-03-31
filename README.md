@@ -7,7 +7,8 @@ multimodal deep learning model to detect hateful memes
 | concatBERT - VGG19 | 0.6497 | 0.6467 | 0.6641 | 0.2 |
 
 Requirements:
-!pip install emoji -qq
-!pip install torch==1.4.0. -qq
-!pip install tensorflow==2.2 -qq
-!pip install transformers==3.5.0 -qq
+
+- emoji -qq
+- torch==1.4.0. -qq (in colab)
+- tensorflow==2.2 -qq
+- transformers==3.5.0 -qq
